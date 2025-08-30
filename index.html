@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DJ App – Goutham Mohan</title>
+  <style>
+    :root{
+      --bg:#0d0f15; --panel:#1b1f2a; --accent:#ff4081; --muted:#9aa3b2; --text:#e6e9ef;
+    }
+    body{margin:0;font-family:system-ui;background:var(--bg);color:var(--text)}
+    .hidden{display:none}
+    .home,.app,.about{min-height:100vh}
+    .center{display:flex;align-items:center;justify-content:center}
+    .card{background:var(--panel);padding:32px;border-radius:16px;max-width:800px;width:92%;text-align:center}
+    h1{margin:0 0 8px;font-size:40px}
+    p.lead{margin:0 0 24px;color:var(--muted)}
+    .btn{background:var(--accent);color:white;border:none;border-radius:10px;padding:10px 18px;font-size:14px;cursor:pointer}
+    .btn.secondary{background:#2a3040}
+    .app{padding:18px}
+    .topbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .mixer{display:grid;grid-template-columns:1fr 260px 1fr;gap:16px}
+    .deck{background:var(--panel);padding:16px;border-radius:16px;display:flex;flex-direction:column;gap:10px}
+    canvas{width:100%;height:68px;background:#0f121a;border-radius:8px}
+    .label{font-size:12px;color:#9aa3b2}
+    input[type=range]{width:100%}
+    .cpuPanel{background:#11141d;padding:10px;border-radius:12px;margin-top:10px;font-size:12px;color:#9fd1ff;text-align:left}
+    footer{text-align:center;padding:12px;font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <!-- HOME -->
+  <section id="home" class="home center">
+    <div class="card">
+      <h1>🎧 DJ App</h1>
+      <p class="lead">Mix two decks, crossfade with equal-power law, live EQ, echo, and loops.</p>
+      <button class="btn" id="startBtn">Start</button>
+      <p style="margin-top:14px;font-size:12px">Made by <b>Goutham Mohan</b> | <a href="https://github.com/rekhamohan938-creator" target="_blank" style="color:#9fd1ff">GitHub</a></p>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about" class="about hidden center">
+    <div class="card">
+      <h1>ℹ️ About DJ App</h1>
+      <p class="lead">This app lets you load two audio tracks, mix them with EQ, crossfader, echo, and loop functions. Includes speech (Say + Y) and CPU usage monitor.</p>
+      <button class="btn secondary" id="backHome">Back</button>
+    </div>
+  </section>
+
+  <!-- APP -->
+  <section id="app" class="app hidden">
+    <div class="topbar">
+      <div><span id="status">Ready</span></div>
+      <div>
+        <input id="djText" type="text" placeholder="Type word...">
+        <button class="btn secondary" id="sayBtn">Say</button>
+        <button class="btn secondary" id="yBtn">Y</button>
+        <button class="btn secondary" id="echoBtn">Echo</button>
+        <button class="btn secondary" id="switchBtn">Switch Decks</button>
+        <button class="btn secondary" id="aboutBtn">About</button>
+      </div>
+    </div>
+
+    <div class="mixer">
+      <!-- Deck A -->
+      <div class="deck">
+        <h3>Deck A</h3>
+        <input id="fileA" type="file" accept="audio/*" />
+        <div id="nameA">No track</div>
+        <button class="btn" id="playA">Play/Pause</button>
+        <button class="btn secondary" id="stopA">Stop</button>
+        <button class="btn secondary" id="cueA">Cue</button>
+        <button class="btn secondary" id="loopInA">Loop In</button>
+        <button class="btn secondary" id="loopOutA">Loop Out</button>
+        <button class="btn secondary" id="loopToggleA">Loop On/Off</button>
+        <span class="label" id="timeA">00:00 / 00:00</span>
+        <input id="seekA" type="range" min="0" max="1" step="0.001" value="0">
+        <span class="label">Volume</span>
+        <input id="volA" type="range" min="0" max="1" step="0.01" value="1">
+        <span class="label">Speed</span>
+        <input id="speedA" type="range" min="0.5" max="2" step="0.01" value="1">
+        <span class="label">Low</span>
+        <input id="lowA" type="range" min="-30" max="30" step="1" value="0">
+        <span class="label">Mid</span>
+        <input id="midA" type="range" min="-30" max="30" step="1" value="0">
+        <span class="label">High</span>
+        <input id="highA" type="range" min="-30" max="30" step="1" value="0">
+        <span class="label">Echo</span>
+        <input id="echoA" type="range" min="0" max="1" step="0.01" value="0">
+        <canvas id="vizA"></canvas>
+      </div>
+
+      <!-- Master Panel -->
+      <div class="deck">
+        <h3>Master Panel</h3>
+        <span class="label">Crossfader</span>
+        <input id="xfader" type="range" min="0" max="1" step="0.001" value="0.5">
+        <span class="label">Master Volume</span>
+        <input id="masterVol" type="range" min="0" max="1" step="0.01" value="1">
+        <canvas id="vizMix"></canvas>
+        <div class="cpuPanel">
+          CPU Load: <span id="cpuVal">0%</span>
+          <div style="background:#222;height:6px;border-radius:4px;margin-top:4px;">
+            <div id="cpuBar" style="background:#ff4081;height:6px;width:0%;border-radius:4px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deck B -->
+      <div class="deck">
+        <h3>Deck B</h3>
+        <input id="fileB" type="file" accept="audio/*" />
+        <div id="nameB">No track</div>
+        <button class="btn" id="playB">Play/Pause</button>
+        <button class="btn secondary" id="stopB">Stop</button>
+        <button class="btn secondary" id="cueB">Cue</button>
+        <button class="btn secondary" id="loopInB">Loop In</button>
+        <button class="btn secondary" id="loopOutB">Loop Out</button>
+        <button class="btn secondary" id="loopToggleB">Loop On/Off</button>
+        <span class="label" id="timeB">00:00 / 00:00</span>
+        <input id="seekB" type="range" min="0" max="1" step="0.001" value="0">
+        <span class="label">Volume</span>
+        <input id="volB" type="range" min="0" max="1" step="0.01" value="1">
+        <span class="label">Speed</span>
+        <input id="speedB" type="range" min="0.5" max="2" step="0.01" value="1">
+        <span class="label">Low</span>
+        <input id="lowB" type="range" min="-30" max="30" step="1" value="0">
+        <span class="label">Mid</span>
+        <input id="midB" type="range" min="-30" max="30" step="1" value="0">
+        <span class="label">High</span>
+        <input id="highB" type="range" min="-30" max="30" step="1" value="0">
+        <span class="label">Echo</span>
+        <input id="echoB" type="range" min="0" max="1" step="0.01" value="0">
+        <canvas id="vizB"></canvas>
+      </div>
+    </div>
+
+    <footer>
+      Developed by <b>Goutham Mohan</b> | <a href="https://github.com/rekhamohan938-creator" target="_blank">GitHub</a>
+    </footer>
+  </section>
+
+  <script>
+  // --- Utility
+  const fmt=s=>{if(!isFinite(s))return"00:00";let m=Math.floor(s/60),ss=Math.floor(s%60);return`${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`};
+
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  const ctx=new AudioCtx();
+  const masterGain=ctx.createGain();masterGain.connect(ctx.destination);
+  const compressor=ctx.createDynamicsCompressor();compressor.connect(masterGain);
+  const mixAnalyser=ctx.createAnalyser();mixAnalyser.fftSize=1024;mixAnalyser.connect(compressor);
+
+  function createDeck(prefix){
+    const el={
+      audio:new Audio(),
+      name:document.getElementById('name'+prefix),
+      playBtn:document.getElementById('play'+prefix),
+      stopBtn:document.getElementById('stop'+prefix),
+      cueBtn:document.getElementById('cue'+prefix),
+      loopInBtn:document.getElementById('loopIn'+prefix),
+      loopOutBtn:document.getElementById('loopOut'+prefix),
+      loopToggleBtn:document.getElementById('loopToggle'+prefix),
+      time:document.getElementById('time'+prefix),
+      seek:document.getElementById('seek'+prefix),
+      vol:document.getElementById('vol'+prefix),
+      speed:document.getElementById('speed'+prefix),
+      low:document.getElementById('low'+prefix),
+      mid:document.getElementById('mid'+prefix),
+      high:document.getElementById('high'+prefix),
+      echo:document.getElementById('echo'+prefix),
+      file:document.getElementById('file'+prefix),
+      canvas:document.getElementById('viz'+prefix)
+    };
+    const src=ctx.createMediaElementSource(el.audio);
+    const low=ctx.createBiquadFilter();low.type='lowshelf';low.frequency.value=200;
+    const mid=ctx.createBiquadFilter();mid.type='peaking';mid.frequency.value=1000;mid.Q.value=1;
+    const high=ctx.createBiquadFilter();high.type='highshelf';high.frequency.value=6000;
+    const deckGain=ctx.createGain();
+    const analyser=ctx.createAnalyser();analyser.fftSize=256;
+    const delay=ctx.createDelay(5.0);delay.delayTime.value=0.25;
+    const feedback=ctx.createGain();feedback.gain.value=0;
+    delay.connect(feedback);feedback.connect(delay);
+    const echoSend=ctx.createGain();echoSend.gain.value=0;
+    echoSend.connect(delay);delay.connect(mixAnalyser);
+    src.connect(low);low.connect(mid);mid.connect(high);high.connect(deckGain);
+    deckGain.connect(mixAnalyser);deckGain.connect(echoSend);deckGain.connect(analyser);
+
+    const state={el,deckGain,echoSend,feedback,cue:0,loopIn:null,loopOut:null,looping:false,analyser};
+
+    // Controls
+    el.playBtn.onclick=()=>{ctx.resume();if(el.audio.paused)el.audio.play();else el.audio.pause();};
+    el.stopBtn.onclick=()=>{el.audio.pause();el.audio.currentTime=0};
+    el.cueBtn.onclick=()=>{state.cue=el.audio.currentTime};
+    el.loopInBtn.onclick=()=>{state.loopIn=el.audio.currentTime};
+    el.loopOutBtn.onclick=()=>{state.loopOut=el.audio.currentTime};
+    el.loopToggleBtn.onclick=()=>{state.looping=!state.looping};
+    el.audio.ontimeupdate=()=>{if(state.looping&&state.loopIn!==null&&state.loopOut!==null){if(el.audio.currentTime>=state.loopOut)el.audio.currentTime=state.loopIn;} el.time.textContent=`${fmt(el.audio.currentTime)} / ${fmt(el.audio.duration)}`; el.seek.value=el.audio.duration?el.audio.currentTime/el.audio.duration:0};
+    el.seek.oninput=()=>{if(el.audio.duration)el.audio.currentTime=el.seek.value*el.audio.duration};
+    el.vol.oninput=()=>deckGain.gain.value=el.vol.value;
+    el.speed.oninput=()=>el.audio.playbackRate=el.speed.value;
+    el.low.oninput=()=>low.gain.value=el.low.value;
+    el.mid.oninput=()=>mid.gain.value=el.mid.value;
+    el.high.oninput=()=>high.gain.value=el.high.value;
+    el.echo.oninput=()=>{echoSend.gain.value=el.echo.value;feedback.gain.value=el.echo.value*0.4};
+    el.file.onchange=e=>{const f=e.target.files[0];if(f){el.audio.src=URL.createObjectURL(f);el.name.textContent=f.name;}}
+    return state;
+  }
+
+  const A=createDeck('A'),B=createDeck('B');
+
+  // Crossfader equal-power
+  const xf=document.getElementById('xfader');
+  xf.oninput=()=>{let x=parseFloat(xf.value);A.deckGain.gain.value=Math.cos(x*Math.PI/2);B.deckGain.gain.value=Math.cos((1-x)*Math.PI/2);};
+  xf.oninput();
+
+  // Master volume
+  const masterVol=document.getElementById('masterVol');masterVol.oninput=()=>masterGain.gain.value=masterVol.value;
+
+  // CPU monitor
+  function monitorCPU(){let last=performance.now();function step(){let now=performance.now();let load=Math.min(100,Math.abs(now-last-16)*6);document.getElementById('cpuVal').textContent=`${load.toFixed(1)}%`;document.getElementById('cpuBar').style.width=`${load}%`;last=now;requestAnimationFrame(step);}step();}
+  monitorCPU();
+
+  // Visualizers
+  function drawViz(deck){const ctx2d=deck.el.canvas.getContext('2d');const buffer=deck.analyser.frequencyBinCount;const data=new Uint8Array(buffer);function draw(){requestAnimationFrame(draw);deck.analyser.getByteFrequencyData(data);ctx2d.fillStyle='#0f121a';ctx2d.fillRect(0,0,deck.el.canvas.width,deck.el.canvas.height);let bw=(deck.el.canvas.width/buffer)*2.5,x=0;for(let i=0;i<buffer;i++){let bh=data[i]/2;ctx2d.fillStyle='#ff4081';ctx2d.fillRect(x,deck.el.canvas.height-bh,bw,bh);x+=bw+1;}}draw();}
+  drawViz(A);drawViz(B);
+  function drawMaster(){const canvas=document.getElementById('vizMix');const ctx2d=canvas.getContext('2d');const buffer=mixAnalyser.frequencyBinCount;const data=new Uint8Array(buffer);function draw(){requestAnimationFrame(draw);mixAnalyser.getByteFrequencyData(data);ctx2d.fillStyle='#0f121a';ctx2d.fillRect(0,0,canvas.width,canvas.height);let bw=(canvas.width/buffer)*2.5,x=0;for(let i=0;i<buffer;i++){let bh=data[i]/2;ctx2d.fillStyle='#9fd1ff';ctx2d.fillRect(x,canvas.height-bh,bw,bh);x+=bw+1;}}draw();}
+  drawMaster();
+
+  // Echo button toggle
+  document.getElementById('echoBtn').onclick=()=>{A.echoSend.gain.value=A.echoSend.gain.value?0:0.4;B.echoSend.gain.value=B.echoSend.gain.value?0:0.4;};
+
+  // Switch decks
+  document.getElementById('switchBtn').onclick=()=>{if(!A.el.audio.paused){A.el.audio.pause();B.el.audio.play();}else if(!B.el.audio.paused){B.el.audio.pause();A.el.audio.play();}};
+
+  // Speech
+  document.getElementById('sayBtn').onclick=()=>{let t=document.getElementById('djText').value;if(t){speechSynthesis.speak(new SpeechSynthesisUtterance(t));}};
+  document.getElementById('yBtn').onclick=()=>speechSynthesis.speak(new SpeechSynthesisUtterance('Y'));
+
+  // Navigation
+  const home=document.getElementById('home'),app=document.getElementById('app'),about=document.getElementById('about');
+  document.getElementById('startBtn').onclick=()=>{home.classList.add('hidden');app.classList.remove('hidden');about.classList.add('hidden');};
+  document.getElementById('aboutBtn').onclick=()=>{app.classList.add('hidden');home.classList.add('hidden');about.classList.remove('hidden');};
+  document.getElementById('backHome').onclick=()=>{about.classList.add('hidden');app.classList.add('hidden');home.classList.remove('hidden');};
+  </script>
+</body>
+</html>
